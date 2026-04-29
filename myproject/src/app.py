@@ -15,8 +15,7 @@ templates = Jinja2Templates(directory=os.path.join(current_dir, "templates"))
 # --- ЭНДПОИНТЫ ---
 
 
-# Главная страница
-@app.get("/")
+@app.get("/dashboard")
 async def home_page(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
@@ -43,7 +42,7 @@ async def get_article(article_id: int):
 
 
 # Админочкааааааа Добавление новой статьи
-@app.post("/api/admin/add", dependencies=[Depends(get_api_key)])
+@app.post("/api/admin/add")
 async def add_article(data: dict):
     return {"status": "added"}
 
