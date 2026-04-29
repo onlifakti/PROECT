@@ -10,14 +10,15 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 app.mount(
     "/static", StaticFiles(directory=os.path.join(current_dir, "static")), name="static"
 )
-templates = Jinja2Templates(directory=os.path.join(current_dir, "templates"))
+templates = Jinja2Templates(directory="templates")
+
 
 # --- ЭНДПОИНТЫ ---
 
 
 @app.get("/dashboard")
 async def home_page(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
 # Поиск статей (будет вызываться с сайта в поиске)
