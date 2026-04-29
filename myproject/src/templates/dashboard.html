@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            padding-top: 20vh;
+        }
+
+        .wrapper {
+            width: 500px;
+            text-align: center;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            background: #111;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 25px;
+            outline: none;
+        }
+
+        #res {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .item {
+            padding: 10px;
+            border-bottom: 1px solid #222;
+            cursor: pointer;
+        }
+
+        .item:hover {
+            background: #111;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <h1>ANIMAL WIKI</h1>
+        <input type="text" placeholder="Поиск..." onkeyup="search(this.value)">
+        <div id="res"></div>
+    </div>
+
+    <script>
+        async function search(q) {
+            const div = document.getElementById('res');
+            if (q.length < 2) return div.innerHTML = "";
+
+            const r = await fetch(`/api/search?q=${q}`);
+            const data = await r.json();
+
+            div.innerHTML = data.map(i => `
+                <div class="item" onclick="location.href='/api/article/'+${i.id}">
+                    <b>${i.title}</b><br><small>${i.preview}</small>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+
+</html>
