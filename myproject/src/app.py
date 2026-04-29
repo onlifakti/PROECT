@@ -1,16 +1,18 @@
 from fastapi import FastAPI, Request, Depends, HTTPException, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.security.api_key import APIKeyHeader
 import os
+
+# Определяем базовую директорию, где лежит этот файл (src)
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
 app = FastAPI(title="Animal Wiki API")
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
+# Правильная настройка статики и шаблонов через абсолютные пути
 app.mount(
     "/static", StaticFiles(directory=os.path.join(current_dir, "static")), name="static"
 )
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=os.path.join(current_dir, "templates"))
 
 
 # --- ЭНДПОИНТЫ ---
@@ -18,31 +20,32 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/dashboard")
 async def home_page(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    # Теперь передаем request отдельным аргументом, как требует новая версия Starlette
+    return templates.TemplateResponse(
+        request=request, name="dashboard.html", context={"request": request}
+    )
 
 
-# Поиск статей (будет вызываться с сайта в поиске)
+# Поиск статей
 @app.get("/api/search")
 async def search_animals(q: str = Query(None, min_length=2)):
-    # Тут будет логика  из database.py
+    # Тут будет логика из database.py
     return {"query": q, "results": []}
 
 
-# Получение всех статей по животным
+# Получение всех статей по категориям
 @app.get("/api/articles/{category}")
 async def get_category_articles(category: str):
-    # Тут будет фильтр по категориям
     return {"category": category, "articles": []}
 
 
-#  Получение конкретной статьи клик на фронтенде
+# Получение конкретной статьи
 @app.get("/api/article/{article_id}")
 async def get_article(article_id: int):
-    # Тут будет возврат текста статьи
     return {"id": article_id, "title": "Example", "content": "Full text here..."}
 
 
-# Админочкааааааа Добавление новой статьи
+# Админка: Добавление новой статьи
 @app.post("/api/admin/add")
 async def add_article(data: dict):
     return {"status": "added"}
@@ -51,4 +54,5 @@ async def add_article(data: dict):
 if __name__ == "__main__":
     import uvicorn
 
+    # Запуск сервера
     uvicorn.run(app, host="127.0.0.1", port=8000)
