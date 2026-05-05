@@ -75,6 +75,21 @@ async def add_article(data: UpdatePapers):
         return data, {"status": "added"}
 
 
+#  ВТОРАЯ СТРАНИЦА
+@app.get("/article/{article_id}")
+async def article_page(request: Request, article_id: int):
+    with engine.begin() as conn:
+        stmt = db.select(data_base).where(data_base.c.id == article_id)
+        result = conn.execute(stmt).mappings().fetchone()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Статья не найдена")
+
+    return templates.TemplateResponse(
+        request=request, name="article_detail.html", context={"article": result}
+    )
+
+
 if __name__ == "__main__":
     import uvicorn
 

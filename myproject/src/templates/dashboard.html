@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Wiki</title>
+    <title>Wiki — Главная</title>
     <style>
         body {
             background: #000;
@@ -11,12 +11,12 @@
             font-family: sans-serif;
             display: flex;
             justify-content: center;
-            padding-top: 20vh;
+            padding-top: 10vh;
             margin: 0;
         }
 
         .wrapper {
-            width: 500px;
+            width: 600px;
             text-align: center;
         }
 
@@ -28,30 +28,30 @@
             color: #fff;
             border-radius: 90px;
             outline: none;
-        }
-
-        #res {
-            margin-top: 20px;
-            text-align: left;
+            margin-bottom: 30px;
         }
 
         .item {
-            padding: 10px;
+            padding: 15px;
             border-bottom: 1px solid #222;
+            text-align: left;
             cursor: pointer;
+            transition: 0.2s;
         }
 
         .item:hover {
             background: #111;
+            border-radius: 10px;
         }
 
         b {
             color: #fff;
+            display: block;
+            font-size: 1.2rem;
         }
 
         small {
             color: #888;
-            display: block;
         }
     </style>
 </head>
@@ -62,12 +62,15 @@
         <input type="text" placeholder="Поиск..." onkeyup="search(this.value)">
         <div id="res">
             {% for i in articles %}
-            <div class="item" onclick="location.href='/api/article/{{i.id}}'">
-                <b>{{i.name}}</b><small>{{i.preview}}</small>
+            <!-- Ссылка ведет на /article/id -->
+            <div class="item" onclick="location.href='/article/{{i.id}}'">
+                <b>{{i.name}}</b>
+                <small>{{i.preview}}</small>
             </div>
             {% endfor %}
         </div>
     </div>
+
     <script>
         async function search(q) {
             const div = document.getElementById('res');
@@ -75,7 +78,7 @@
             const r = await fetch(`/api/search?q=${q}`);
             const data = await r.json();
             div.innerHTML = data.results.map(i => `
-                <div class="item" onclick="location.href='/api/article/${i.id}'">
+                <div class="item" onclick="location.href='/article/${i.id}'">
                     <b>${i.name}</b><small>${i.preview}</small>
                 </div>`).join('');
         }
