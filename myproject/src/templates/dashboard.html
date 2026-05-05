@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <title>Wiki</title>
     <style>
         body {
             background: #000;
@@ -11,6 +12,7 @@
             display: flex;
             justify-content: center;
             padding-top: 20vh;
+            margin: 0;
         }
 
         .wrapper {
@@ -42,29 +44,40 @@
         .item:hover {
             background: #111;
         }
+
+        b {
+            color: #fff;
+        }
+
+        small {
+            color: #888;
+            display: block;
+        }
     </style>
 </head>
 
 <body>
     <div class="wrapper">
-        <h1> WIKI</h1>
+        <h1>WIKI</h1>
         <input type="text" placeholder="Поиск..." onkeyup="search(this.value)">
-        <div id="res"></div>
+        <div id="res">
+            {% for i in articles %}
+            <div class="item" onclick="location.href='/api/article/{{i.id}}'">
+                <b>{{i.name}}</b><small>{{i.preview}}</small>
+            </div>
+            {% endfor %}
+        </div>
     </div>
-
     <script>
         async function search(q) {
             const div = document.getElementById('res');
-            if (q.length < 2) return div.innerHTML = "";
-
+            if (q.length < 1) return location.reload();
             const r = await fetch(`/api/search?q=${q}`);
             const data = await r.json();
-
-            div.innerHTML = data.map(i => `
-                <div class="item" onclick="location.href='/api/article/'+${i.id}">
-                    <b>${i.title}</b><br><small>${i.preview}</small>
-                </div>
-            `).join('');
+            div.innerHTML = data.results.map(i => `
+                <div class="item" onclick="location.href='/api/article/${i.id}'">
+                    <b>${i.name}</b><small>${i.preview}</small>
+                </div>`).join('');
         }
     </script>
 </body>
