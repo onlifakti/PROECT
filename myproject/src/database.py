@@ -10,13 +10,14 @@ metadata = db.MetaData()
 data_base = db.Table(
     "papers",
     metadata,
-    db.Column("id", db.integer, primary_key=True),
+    db.Column("id", db.Integer, primary_key=True),
     db.Column("name", db.Text, nullable=False),
     db.Column("preview", db.Text, nullable=True),
+    db.Column("subject", db.Text, nullable=False),
     db.Column("article", db.Text, nullable=False),
     db.Column("text", db.Text, nullable=False),
     db.Column("note", db.Text, nullable=True),
-    db.Column("favorite", db.bool, nullable=False),
+    db.Column("favorite", db.Boolean, nullable=False),
 )
 
 

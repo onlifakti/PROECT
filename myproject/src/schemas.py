@@ -7,14 +7,17 @@ class Papers:
     id: int
     name: str
     preview: str
+    subject: str
     article: str
     text: str
     note: str
     favorite: bool
 
+    class Config:
+        from_attributes = True
 
-class UpdatePapers:
 
+class UpdatePapers(BaseModel):
     name: Optional[str] = None
     preview: Optional[str] = None
     article: Optional[str] = None
