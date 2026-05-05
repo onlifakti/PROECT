@@ -16,8 +16,19 @@
         }
 
         .wrapper {
-            width: 600px;
+            width: 500px;
             text-align: center;
+        }
+
+        /* заголовок кликабельныq для вызова логина */
+        h1 {
+            cursor: pointer;
+            user-select: none;
+            transition: 0.3s;
+        }
+
+        h1:hover {
+            color: #333;
         }
 
         input {
@@ -28,7 +39,24 @@
             color: #fff;
             border-radius: 90px;
             outline: none;
+            margin-bottom: 20px;
+        }
+
+        /* Стили для скрытого поля логина */
+        #admin-panel {
+            display: none;
+            /* Изначально скрыто */
             margin-bottom: 30px;
+            padding: 20px;
+            border: 1px dashed #222;
+            border-radius: 20px;
+        }
+
+        .admin-input {
+            border-bottom: 1px solid #333;
+            border-radius: 0;
+            background: transparent;
+            width: 80%;
         }
 
         .item {
@@ -36,18 +64,15 @@
             border-bottom: 1px solid #222;
             text-align: left;
             cursor: pointer;
-            transition: 0.2s;
         }
 
         .item:hover {
             background: #111;
-            border-radius: 10px;
         }
 
         b {
             color: #fff;
             display: block;
-            font-size: 1.2rem;
         }
 
         small {
@@ -58,20 +83,54 @@
 
 <body>
     <div class="wrapper">
-        <h1>WIKI</h1>
+        <!-- Клик по заголовку откроет поле пароля1 -->
+        <h1 onclick="toggleAdmin()">WIKI</h1>
+
+        <!-- vxod v adminky-->
+        <div id="admin-panel">
+            <small style="display:block; margin-bottom:10px;">ENCRYPTED ACCESS</small>
+            <input type="password" id="adminKey" class="admin-input" placeholder="KEY..."
+                onkeydown="if(event.key==='Enter') login()">
+        </div>
+
         <input type="text" placeholder="Поиск..." onkeyup="search(this.value)">
+
         <div id="res">
             {% for i in articles %}
-            <!-- Ссылка ведет на /article/id -->
             <div class="item" onclick="location.href='/article/{{i.id}}'">
-                <b>{{i.name}}</b>
-                <small>{{i.preview}}</small>
+                <b>{{i.name}}</b><small>{{i.preview}}</small>
             </div>
             {% endfor %}
         </div>
     </div>
 
     <script>
+        // Функция показать/скрыть 
+        function toggleAdmin() {
+            const panel = document.getElementById('admin-panel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+            if (panel.style.display === 'block') document.getElementById('adminKey').focus();
+        }
+
+        // Функция входа
+        async function login() {
+            const key = document.getElementById('adminKey').value;
+
+            // rklych na proverky ny xz kak rabotat bydet 
+            const response = await fetch('/api/verify-key', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ secret_key: key })
+            });
+
+            if (response.ok) {
+                location.href = '/secret'; // Уходим на секретную страницу 6767676767
+            } else {
+                alert('ACCESS DENIED');
+            }
+        }
+
+        // поисковик
         async function search(q) {
             const div = document.getElementById('res');
             if (q.length < 1) return location.reload();
@@ -82,6 +141,7 @@
                     <b>${i.name}</b><small>${i.preview}</small>
                 </div>`).join('');
         }
+
     </script>
 </body>
 

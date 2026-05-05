@@ -2,3 +2,8 @@ fastapi[all]
 uvicorn[standard]
 requests
 pytest
+fastapi
+uvicorn
+sqlalchemy
+jinja2
+python-multipart
