@@ -13,6 +13,7 @@
             justify-content: center;
             padding-top: 10vh;
             margin: 0;
+            min-height: 100vh;
         }
 
         .wrapper {
@@ -20,7 +21,34 @@
             text-align: center;
         }
 
-        /* заголовок кликабельныq для вызова логина */
+        /* --- ВРЕМЯ СОЗДАНИЯ СЛЕВА СНИЗУ --- */
+        #recent-activity-box {
+            position: fixed;
+            left: 30px;
+            bottom: 30px;
+            text-align: left;
+            border-left: 1px solid #111;
+            padding-left: 15px;
+            z-index: 10;
+        }
+
+        /* Надпись "Последние статьи" */
+        .recent-title {
+            color: #222;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            user-select: none;
+        }
+
+        .recent-content {
+            font-size: 0.8rem;
+            color: #444;
+        }
+
+        /* ----------------------- */
+
         h1 {
             cursor: pointer;
             user-select: none;
@@ -42,10 +70,8 @@
             margin-bottom: 20px;
         }
 
-        /* Стили для скрытого поля логина */
         #admin-panel {
             display: none;
-            /* Изначально скрыто */
             margin-bottom: 30px;
             padding: 20px;
             border: 1px dashed #222;
@@ -82,11 +108,17 @@
 </head>
 
 <body>
+
+    <!-- Блок в углу с заголовком -->
+    <div id="recent-activity-box">
+        <div class="recent-title">Последние статьи</div>
+        <div class="recent-content" id="recent-list">
+        </div>
+    </div>
+
     <div class="wrapper">
-        <!-- Клик по заголовку откроет поле пароля1 -->
         <h1 onclick="toggleAdmin()">WIKI</h1>
 
-        <!-- vxod v adminky-->
         <div id="admin-panel">
             <small style="display:block; margin-bottom:10px;">ENCRYPTED ACCESS</small>
             <input type="password" id="adminKey" class="admin-input" placeholder="KEY..."
@@ -105,18 +137,14 @@
     </div>
 
     <script>
-        // Функция показать/скрыть 
         function toggleAdmin() {
             const panel = document.getElementById('admin-panel');
             panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
             if (panel.style.display === 'block') document.getElementById('adminKey').focus();
         }
 
-        // Функция входа
         async function login() {
             const key = document.getElementById('adminKey').value;
-
-            // rklych na proverky ny xz kak rabotat bydet 
             const response = await fetch('/api/verify-key', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -124,13 +152,12 @@
             });
 
             if (response.ok) {
-                location.href = '/secret'; // Уходим на секретную страницу 6767676767
+                location.href = '/secret';
             } else {
                 alert('ACCESS DENIED');
             }
         }
 
-        // поисковик
         async function search(q) {
             const div = document.getElementById('res');
             if (q.length < 1) return location.reload();
@@ -141,7 +168,6 @@
                     <b>${i.name}</b><small>${i.preview}</small>
                 </div>`).join('');
         }
-
     </script>
 </body>
 
