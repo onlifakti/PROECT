@@ -20,6 +20,14 @@ data_base = db.Table(
     db.Column("favorite", db.Boolean, nullable=False),
 )
 
+users = db.Table(
+    "users",
+    metadata,
+    db.Column("user_id", db.Integer, primary_key=True),
+    db.Column("username", db.Text, nullable=False),
+    db.Column("password_hash", db.Text, nullable=False),
+)
+
 
 def init_db() -> None:
     metadata.create_all(engine)

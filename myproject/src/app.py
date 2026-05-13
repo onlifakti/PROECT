@@ -4,7 +4,7 @@ import sqlalchemy as db
 from fastapi.staticfiles import StaticFiles
 import os
 
-from database import engine, data_base, init_db
+from database import engine, data_base, init_db, users
 from schemas import UpdatePapers
 
 app = FastAPI(title="Wiki API")
