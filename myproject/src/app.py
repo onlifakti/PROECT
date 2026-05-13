@@ -1,20 +1,23 @@
-from fastapi import FastAPI, Request, Depends, HTTPException, Query
+from fastapi import FastAPI, Request, Query, HTTPException
 from fastapi.templating import Jinja2Templates
 import sqlalchemy as db
-import uvicorn
 from fastapi.staticfiles import StaticFiles
-from fastapi.security.api_key import APIKeyHeader
-from database import engine, data_base, init_db
-from schemas import Papers, UpdatePapers
 import os
+
+from database import engine, data_base, init_db
+from schemas import UpdatePapers, CreatePaper
 
 app = FastAPI(title="Wiki API")
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
+
+
+init_db()
+
 app.mount(
     "/static", StaticFiles(directory=os.path.join(current_dir, "static")), name="static"
 )
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=os.path.join(current_dir, "templates"))
 
 
 # --- ЭНДПОИНТЫ ---
@@ -22,49 +25,134 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/dashboard")
 async def home_page(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+
+    with engine.begin() as conn:
+        result = conn.execute(db.select(data_base)).mappings().all()
+
+    return templates.TemplateResponse(
+        request=request, name="dashboard.html", context={"articles": result}
+    )
 
 
-# Поиск статей (будет вызываться с сайта в поиске)
+# POISKOVIK
 @app.get("/api/search")
 async def search(q: str = Query(None, min_length=2)):
-    # Тут будет логика  из database.py
     with engine.begin() as conn:
-        stmt = db.select(data_base).where()
-        return {"query": q, "results": []}
+        stmt = db.select(data_base).where(
+            db.or_(data_base.c.name.icontains(q), data_base.c.text.icontains(q))
+        )
+        results = conn.execute(stmt).mappings().all()
+        return {"query": q, "results": results}
 
 
-# Получение всех статей
+# VSE STATIY
 @app.get("/api/articles/{category}")
 async def get_category_articles(category: str):
-    # Тут будет фильтр по категориям
     with engine.begin() as conn:
-        stmt = db.select(data_base).where(data_base.c.subject == category).fetchone()
-        return {"category": category, "articles": []}
+        stmt = db.select(data_base).where(data_base.c.subject == category)
+        articles = conn.execute(stmt).mappings().all()
+        return {"category": category, "articles": articles}
 
 
-#  Получение конкретной статьи клик на фронтенде
+# JSON STATYA
 @app.get("/api/article/{article_id}")
 async def get_article(article_id: int):
-    # Тут будет возврат текста статьи
     with engine.begin() as conn:
-        stmt = (
-            db.select(data_base.c.text).where(data_base.c.id == article_id).fetchone()
-        )
-        return {"id": article_id, "title": "Example", "content": stmt}
+        stmt = db.select(data_base).where(data_base.c.id == article_id)
+        result = conn.execute(stmt).mappings().fetchone()
+        return result
 
 
-# Админочкааааааа Добавление новой статьи
+# ааадминочка исправоенная
 @app.post("/api/admin/add", response_model=None)
-async def add_article(data: dict):
+async def add_article(data: UpdatePapers):
     with engine.begin() as conn:
-        stmt = exists = conn.execute(
+        exists = conn.execute(
             db.select(data_base.c.id).where(data_base.c.id == data.id)
         ).fetchone()
+
         conn.execute(db.insert(data_base), [data.model_dump()])
         return data, {"status": "added"}
 
 
+#  ВТОРАЯ СТРАНИЦА
+@app.get("/article/{article_id}")
+async def article_page(request: Request, article_id: int):
+    with engine.begin() as conn:
+        stmt = db.select(data_base).where(data_base.c.id == article_id)
+        result = conn.execute(stmt).mappings().fetchone()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Статья не найдена")
+
+    return templates.TemplateResponse(
+        request=request, name="article_detail.html", context={"article": result}
+    )
+
+
+@app.post("/register", tags=["auth"], status_code=201)
+def register(payload: UserRegister):
+
+    with engine.begin() as conn:
+
+        # Проверяем - вдруг пользователь с таким именем уже есть?
+
+        exists = conn.execute(
+            db.select(users.c.user_id).where(users.c.username == payload.username)
+        ).fetchone()
+
+        if exists:
+            raise HTTPException(status_code=409, detail="username already taken")
+        hashed = pwd_context.hash(payload.password)
+        conn.execute(
+            db.insert(users),
+            [{"username": payload.username, "password_hash": hashed}],
+        )
+
+        return {"message": "registered successfully"}
+
+
+@app.post("/login", tags=["auth"])
+def login(payload: UserLogin):
+    with engine.begin() as conn:
+
+        # Ищем пользователя по username
+
+        row = conn.execute(
+            db.select(users).where(users.c.username == payload.username)
+        ).fetchone()
+
+        # Если пользователь не найден ИЛИ пароль неверный - ошибка 401
+
+        if row is None or not pwd_context.verify(
+            payload.password, row._mapping["password_hash"]
+        ):
+            raise HTTPException(status_code=401, detail="invalid username or password")
+        return {"message": "login successful", "username": payload.username}
+
+
+@app.post("/login", tags=["auth"])
+def login(payload: UserLogin):
+
+    with engine.begin() as conn:
+
+        # Ищем пользователя по username
+
+        row = conn.execute(
+            db.select(users).where(users.c.username == payload.username)
+        ).fetchone()
+
+        # Если пользователь не найден ИЛИ пароль неверный - ошибка 401
+
+        if row is None or not pwd_context.verify(
+            payload.password, row._mapping["password_hash"]
+        ):
+
+            raise HTTPException(status_code=401, detail="invalid username or password")
+        return {"message": "login successful", "username": payload.username}
+
+
 if __name__ == "__main__":
+    import uvicorn
 
     uvicorn.run(app, host="127.0.0.1", port=8000)
