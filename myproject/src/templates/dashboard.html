@@ -125,6 +125,33 @@
                 onkeydown="if(event.key==='Enter') login()">
         </div>
 
+<!-- Форма регистрации и входа -->
+<div id="auth-block">
+
+  <!-- Кнопки переключения между формами -->
+    <button onclick="showForm('login')">Войти</button>
+    <button onclick="showForm('register')">Зарегистрироваться</button>
+
+  <!-- Форма входа -->
+    <div id="form-login">
+    <h2>Вход</h2>
+    <input id="login-username" type="text" placeholder="Логин"><br>
+    <input id="login-password" type="password" placeholder="Пароль"><br>
+    <button onclick="doLogin()">Войти</button>
+  </div>
+
+  <!-- Форма регистрации (скрыта по умолчанию) -->
+  <div id="form-register" style="display:none">
+    <h2>Регистрация</h2>
+    <input id="reg-username" type="text" placeholder="Придумайте логин"><br>
+    <input id="reg-password" type="password" placeholder="Придумайте пароль"><br>
+    <button onclick="doRegister()">Зарегистрироваться</button>
+  </div>
+
+  <!-- Сюда будет выводиться результат -->
+  <p id="auth-result"></p>
+
+</div>
         <input type="text" placeholder="Поиск..." onkeyup="search(this.value)">
 
         <div id="res">
@@ -158,6 +185,63 @@
             }
         }
 
+
+  // Адрес нашего сервера FastAPI
+  const API = "http://127.0.0.1:8000";
+
+  // Переключение между формами
+  function showForm(name) {
+    document.getElementById("form-login").style.display =
+      name === "login" ? "block" : "none";
+    document.getElementById("form-register").style.display =
+      name === "register" ? "block" : "none";
+  }
+
+  // Вход - отправляет логин и пароль на POST /login
+  async function doLogin() {
+    const username = document.getElementById("login-username").value;
+    const password = document.getElementById("login-password").value;
+
+    const response = await fetch(API + "/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
+    const result = document.getElementById("auth-result");
+
+    if (response.ok) {
+      result.style.color = "green";
+      result.textContent = "Добро пожаловать, " + data.username + "!";
+    } else {
+      result.style.color = "red";
+      result.textContent = "Ошибка: " + data.detail;
+    }
+  }
+
+  // Регистрация - отправляет логин и пароль на POST /register
+  async function doRegister() {
+    const username = document.getElementById("reg-username").value;
+    const password = document.getElementById("reg-password").value;
+
+    const response = await fetch(API + "/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
+    const result = document.getElementById("auth-result");
+
+    if (response.ok) {
+      result.style.color = "green";
+      result.textContent = "Регистрация прошла успешно! Теперь войдите.";
+    } else {
+      result.style.color = "red";
+      result.textContent = "Ошибка: " + data.detail;
+    }
+  }
         async function search(q) {
             const div = document.getElementById('res');
             if (q.length < 1) return location.reload();
@@ -168,6 +252,7 @@
                     <b>${i.name}</b><small>${i.preview}</small>
                 </div>`).join('');
         }
+    
     </script>
 </body>
 

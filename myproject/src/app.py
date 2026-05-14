@@ -3,18 +3,50 @@ from fastapi.templating import Jinja2Templates
 import sqlalchemy as db
 from fastapi.staticfiles import StaticFiles
 import os
-
-<<<<<<< HEAD
+from passlib.context import CryptContext
 from database import engine, data_base, init_db, users
-from schemas import UpdatePapers
-=======
-from database import engine, data_base, init_db
-from schemas import UpdatePapers, CreatePaper
->>>>>>> 9d7b2c473051946c7b8795b9a0bd253d2898e85d
+from schemas import (
+    CreatePaper,
+    Error,
+    PaperResponse,
+    UpdatePapers,
+    UserLogin,
+    UserRegister,
+)
 
+# todo Список тегов с описанием для документации
+openapi_tags = [
+    {"name": "health", "description": "Проверка, что сервер жив"},
+    {"name": "students", "description": "Эндпоинты по ученикам"},
+    {"name": "teachers", "description": "Эндпоинты по учителям"},
+    {"name": "auth", "description": "Регистрация и вход"},
+]
 app = FastAPI(title="Wiki API")
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
+
+pwd_context = CryptContext(schemes=["bcrypt"])
+
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+# todo при регистрации, превращает пароль в хэш.
+
+
+#  Функция для проверки
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 init_db()
@@ -132,27 +164,6 @@ def login(payload: UserLogin):
         if row is None or not pwd_context.verify(
             payload.password, row._mapping["password_hash"]
         ):
-            raise HTTPException(status_code=401, detail="invalid username or password")
-        return {"message": "login successful", "username": payload.username}
-
-
-@app.post("/login", tags=["auth"])
-def login(payload: UserLogin):
-
-    with engine.begin() as conn:
-
-        # Ищем пользователя по username
-
-        row = conn.execute(
-            db.select(users).where(users.c.username == payload.username)
-        ).fetchone()
-
-        # Если пользователь не найден ИЛИ пароль неверный - ошибка 401
-
-        if row is None or not pwd_context.verify(
-            payload.password, row._mapping["password_hash"]
-        ):
-
             raise HTTPException(status_code=401, detail="invalid username or password")
         return {"message": "login successful", "username": payload.username}
 

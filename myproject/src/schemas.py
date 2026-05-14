@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from pydantic import BaseModel, Field
 
 
 # для создания новой статьи
@@ -32,3 +33,13 @@ class UpdatePapers(BaseModel):
 
 class Error(BaseModel):
     detail: str
+
+
+class UserRegister(BaseModel):
+    username: str = Field(min_length=3, description="Логин")
+    password: str = Field(min_length=6, description="Пароль")
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
