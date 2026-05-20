@@ -61,15 +61,21 @@
         }
     </style>
 </head>
-
+<!-- -->
 <body>
     <div class="container">
-        <a href="/dashboard" class="back">← Назад к поиску</a>
+        <!--Обычная ссылка в виде кнопки, которая возвращает на главную-->
+        <a href="/dashboard" class="back">← Назад к поиску</a> 
+        <!--Python автоматически подставит предмет или тему статьи из бд-->
         <div class="subject">{{ article.subject }}</div>
+        <!--В него подставляется название статьи -->
         <h1>{{ article.name }}</h1>
+        <!-- выводится весь длинный текст статьи-->
         <div class="text">{{ article.text }}</div>
+        <!-- ТУТ АЙДИ СТАТЬИ КОТОРАЯ СЛЕВА СНИЗУ ВРОДЕ-->
         <div class="footer">ID: {{ article.id }} | {{ article.note }}</div>
     </div>
 </body>
 
 </html>
+<!-- БЕЗ 67 ТУТ НЕ ОБОЙТИСЬ --> 

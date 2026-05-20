@@ -4,7 +4,7 @@ import sqlalchemy as db
 from fastapi.staticfiles import StaticFiles
 import os
 from passlib.context import CryptContext
-from database import engine, data_base, init_db, users
+from database import engine, data_base, init_db, users, OLIVEGIK
 from schemas import (
     CreatePaper,
     Error,
@@ -13,6 +13,9 @@ from schemas import (
     UserLogin,
     UserRegister,
 )
+from pydantic import BaseModel
+from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware
 
 # todo Список тегов с описанием для документации
 openapi_tags = [
@@ -25,13 +28,14 @@ app = FastAPI(title="Wiki API")
 
 from fastapi.middleware.cors import CORSMiddleware
 
+#!НЕ ТРОГАТЬ ЭТО
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+# todo: Эта строчка автоматически находит папку, в которой лежит запущенный скрипт
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 pwd_context = CryptContext(schemes=["bcrypt"])
@@ -43,23 +47,26 @@ def get_password_hash(password: str) -> str:
 
 # todo при регистрации, превращает пароль в хэш.
 
+# // 67 67 67 67 67 67 67 67 67 67 67?
 
-#  Функция для проверки
+
+# * Функция для проверки
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
 init_db()
-
+#!И ЭТО
 app.mount(
     "/static", StaticFiles(directory=os.path.join(current_dir, "static")), name="static"
 )
 templates = Jinja2Templates(directory=os.path.join(current_dir, "templates"))
 
 
-# --- ЭНДПОИНТЫ ---
+# * --- ЭНДПОИНТЫ ---
 
 
+#! дешбоард без этого не запустится
 @app.get("/dashboard")
 async def home_page(request: Request):
 
@@ -68,6 +75,17 @@ async def home_page(request: Request):
 
     return templates.TemplateResponse(
         request=request, name="dashboard.html", context={"articles": result}
+    )
+
+
+@app.get("/admin")
+async def get_admin_page(request: Request):
+
+    with engine.begin() as conn:
+        result = conn.execute(db.select(data_base)).mappings().all()
+
+    return templates.TemplateResponse(
+        request=request, name="admin.html", context={"articles": result}
     )
 
 
@@ -104,12 +122,18 @@ async def get_article(article_id: int):
 @app.post("/api/admin/add", response_model=None)
 async def add_article(data: UpdatePapers):
     with engine.begin() as conn:
-        exists = conn.execute(
-            db.select(data_base.c.id).where(data_base.c.id == data.id)
-        ).fetchone()
-
         conn.execute(db.insert(data_base), [data.model_dump()])
-        return data, {"status": "added"}
+        return {"status": "added"}
+
+
+# Эндпоинт УДАЛЕНИЯ статьи (DELETE)
+@app.delete("/api/admin/delete/{article_id}")
+async def delete_article(article_id: int):
+    with engine.begin() as conn:
+        # Простое удаление строки из базы по её ID
+        query = data_base.delete().where(data_base.c.id == article_id)
+        conn.execute(query)
+    return {"status": "deleted"}
 
 
 #  ВТОРАЯ СТРАНИЦА
@@ -132,7 +156,7 @@ def register(payload: UserRegister):
 
     with engine.begin() as conn:
 
-        # Проверяем - вдруг пользователь с таким именем уже есть?
+        # ? Проверка - вдруг пользователь с таким именем уже есть
 
         exists = conn.execute(
             db.select(users.c.user_id).where(users.c.username == payload.username)
@@ -159,7 +183,7 @@ def login(payload: UserLogin):
             db.select(users).where(users.c.username == payload.username)
         ).fetchone()
 
-        # Если пользователь не найден ИЛИ пароль неверный - ошибка 401
+        #! Если пользователь не найден ИЛИ пароль неверный - ошибка 401
 
         if row is None or not pwd_context.verify(
             payload.password, row._mapping["password_hash"]
@@ -168,7 +192,71 @@ def login(payload: UserLogin):
         return {"message": "login successful", "username": payload.username}
 
 
+#  ДОБАВЛЕНИЯ статьи
+@app.post("/api/articles")
+async def create_article(item: OLIVEGIK):
+    with engine.begin() as conn:
+
+        # todo  sql запрос на вставку строки в таблицу papers
+
+        query = data_base.insert().values(
+            name=item.name,
+            preview=item.preview,
+            subject=item.subject,
+            article=item.article,
+            text=item.text,
+            note=item.note,
+            favorite=item.favorite,
+        )
+        conn.execute(query)
+    return {"status": "ok"}
+
+
+# ИЗМЕНЕНИE статьи
+@app.put("/api/articles/{article_id}")
+async def update_article(article_id: int, item: OLIVEGIK):
+    with engine.begin() as conn:
+        # Находим статью по ID и обновляем абсолютно все ее поля
+        query = (
+            data_base.update()
+            .where(data_base.c.id == article_id)
+            .values(
+                name=item.name,
+                preview=item.preview,
+                subject=item.subject,
+                article=item.article,
+                text=item.text,
+                note=item.note,
+                favorite=item.favorite,
+            )
+        )
+        conn.execute(query)
+    return {"status": "ok"}
+
+
+#! УДАЛЕНИE статьи
+
+
+@app.delete("/api/articles/{article_id}")
+async def delete_article(article_id: int):
+    with engine.begin() as conn:
+        # Простое удаление строки из базы по ее ID
+        query = data_base.delete().where(data_base.c.id == article_id)
+        conn.execute(query)
+    return {"status": "ok"}
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Разрешение на  любые подключения
+    allow_credentials=True,
+    allow_methods=["*"],  # Разрешение для  POST, PUT, DELETE
+    allow_headers=["*"],
+)
+
 if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
+#!ну в конце без 67 не обойтись

@@ -24,7 +24,7 @@ class PaperResponse(CreatePaper):
 class UpdatePapers(BaseModel):
     name: Optional[str] = None
     preview: Optional[str] = None
-    subject: Optional[str] = None  # Добавил, если захотим сменить тему вкики
+    subject: Optional[str] = None  # Добавил, если захочешь сменить тему вкики
     article: Optional[str] = None
     text: Optional[str] = None
     note: Optional[str] = None

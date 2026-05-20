@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>Wiki — Главная</title>
     <style>
+        /*базовые стили настройки внешнего вида экрана и по центру делает*/
         body {
             background: #000;
             color: #fff;
@@ -15,7 +16,7 @@
             margin: 0;
             min-height: 100vh;
         }
-
+        /*ограничивает ширину открывающийся админки     */
         .wrapper {
             width: 500px;
             text-align: center;
@@ -58,7 +59,7 @@
         h1:hover {
             color: #333;
         }
-
+        /* отвечает за внешний вид главной строки поиска*/ 
         input {
             width: 100%;
             padding: 15px;
@@ -68,6 +69,18 @@
             border-radius: 90px;
             outline: none;
             margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Внутри скрытой панели убираем скругления у инпутов для соответствия исходному стилю */
+        #admin-panel input {
+            border-radius: 0;
+            border: none;
+            border-bottom: 1px solid #333;
+            background: transparent;
+            width: 80%;
+            padding: 10px;
+            margin-bottom: 15px;
         }
 
         #admin-panel {
@@ -78,11 +91,28 @@
             border-radius: 20px;
         }
 
-        .admin-input {
-            border-bottom: 1px solid #333;
-            border-radius: 0;
+        #admin-panel h2 {
+            font-size: 1.2rem;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-weight: normal;
+            letter-spacing: 1px;
+        }
+
+        /* Стилизация исходных кнопок под дизайн панели */
+        #admin-panel button {
             background: transparent;
-            width: 80%;
+            color: #aaa;
+            border: 1px solid #222;
+            padding: 6px 12px;
+            cursor: pointer;
+            margin: 5px;
+            transition: 0.2s;
+        }
+
+        #admin-panel button:hover {
+            color: #fff;
+            border-color: #444;
         }
 
         .item {
@@ -112,46 +142,44 @@
     <!-- Блок в углу с заголовком -->
     <div id="recent-activity-box">
         <div class="recent-title">Последние статьи</div>
-        <div class="recent-content" id="recent-list">
-        </div>
+        <div class="recent-content" id="recent-list"></div>
     </div>
 
     <div class="wrapper">
+        <!-- Клик по WIKI открывает/закрывает панель авторизации -->
         <h1 onclick="toggleAdmin()">WIKI</h1>
 
+        <!-- Блок админки, куда теперь интегрирована авторизация -->
         <div id="admin-panel">
-            <small style="display:block; margin-bottom:10px;">ENCRYPTED ACCESS</small>
-            <input type="password" id="adminKey" class="admin-input" placeholder="KEY..."
-                onkeydown="if(event.key==='Enter') login()">
+            <small style="display:block; margin-bottom:15px; letter-spacing: 1px;">ENCRYPTED ACCESS</small>
+            
+            <!-- Переключатели режимов -->
+            <div style="margin-bottom: 15px;">
+                <button onclick="showForm('login')">Войти</button>
+                <button onclick="showForm('register')">Зарегистрироваться</button>
+            </div>
+
+            <!-- Форма входа -->
+            <div id="form-login">
+                <h2>Вход</h2>
+                <input id="login-username" type="text" placeholder="Логин"><br>
+                <input id="login-password" type="password" placeholder="Пароль"><br>
+                <button onclick="doLogin()">Войти</button>
+            </div>
+
+            <!-- Форма регистрации (скрыта по умолчанию) -->
+            <div id="form-register" style="display:none">
+                <h2>Регистрация</h2>
+                <input id="reg-username" type="text" placeholder="Придумайте логин"><br>
+                <input id="reg-password" type="password" placeholder="Придумайте пароль"><br>
+                <button onclick="doRegister()">Зарегистрироваться</button>
+            </div>
+
+            <!-- Поле вывода статуса или ошибок Pydantic -->
+            <p id="auth-result" style="margin-top: 15px; font-size: 0.9rem;"></p>
         </div>
 
-<!-- Форма регистрации и входа -->
-<div id="auth-block">
-
-  <!-- Кнопки переключения между формами -->
-    <button onclick="showForm('login')">Войти</button>
-    <button onclick="showForm('register')">Зарегистрироваться</button>
-
-  <!-- Форма входа -->
-    <div id="form-login">
-    <h2>Вход</h2>
-    <input id="login-username" type="text" placeholder="Логин"><br>
-    <input id="login-password" type="password" placeholder="Пароль"><br>
-    <button onclick="doLogin()">Войти</button>
-  </div>
-
-  <!-- Форма регистрации (скрыта по умолчанию) -->
-  <div id="form-register" style="display:none">
-    <h2>Регистрация</h2>
-    <input id="reg-username" type="text" placeholder="Придумайте логин"><br>
-    <input id="reg-password" type="password" placeholder="Придумайте пароль"><br>
-    <button onclick="doRegister()">Зарегистрироваться</button>
-  </div>
-
-  <!-- Сюда будет выводиться результат -->
-  <p id="auth-result"></p>
-
-</div>
+        <!-- Основной поиск -->
         <input type="text" placeholder="Поиск..." onkeyup="search(this.value)">
 
         <div id="res">
@@ -164,95 +192,103 @@
     </div>
 
     <script>
+        // Функция открытия/закрытия панели по клику на заголовок
         function toggleAdmin() {
             const panel = document.getElementById('admin-panel');
             panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-            if (panel.style.display === 'block') document.getElementById('adminKey').focus();
-        }
-
-        async function login() {
-            const key = document.getElementById('adminKey').value;
-            const response = await fetch('/api/verify-key', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ secret_key: key })
-            });
-
-            if (response.ok) {
-                location.href = '/secret';
-            } else {
-                alert('ACCESS DENIED');
+            if (panel.style.display === 'block') {
+                document.getElementById('login-username').focus();
             }
         }
 
+        const API = "http://127.0.0.1:8000";
 
-  // Адрес нашего сервера FastAPI
-  const API = "http://127.0.0.1:8000";
+        // Переключение лоигна входа  внутри панели
+        function showForm(name) {
+            document.getElementById("form-login").style.display = name === "login" ? "block" : "none";
+            document.getElementById("form-register").style.display = name === "register" ? "block" : "none";
+            document.getElementById("auth-result").textContent = "";
+        }
 
-  // Переключение между формами
-  function showForm(name) {
-    document.getElementById("form-login").style.display =
-      name === "login" ? "block" : "none";
-    document.getElementById("form-register").style.display =
-      name === "register" ? "block" : "none";
-  }
+        // Безопасный парсер для предотвращения вывода 
+        function parseError(data) {
+            if (!data) return "Неизвестная ошибка";
+            if (data.detail) {
+                if (typeof data.detail === 'string') return data.detail;
+                if (Array.isArray(data.detail) && data.detail.length > 0) {
+                    return data.detail.map(e => `${e.loc.join(' -> ')}: ${e.msg}`).join(', ');
+                }
+                return JSON.stringify(data.detail);
+            }
+            return JSON.stringify(data);
+        }
 
-  // Вход - отправляет логин и пароль на POST /login
-  async function doLogin() {
-    const username = document.getElementById("login-username").value;
-    const password = document.getElementById("login-password").value;
+        // Авторизация
+        async function doLogin() { //Объявляет функциюю Слово async обязательно нужно,
+                                // чтобы можн использовать команду await для ожидания ответа от сервера.
+            const username = document.getElementById("login-username").value; //Находит на странице поле ввода  login-username берет из валуе и сохраняет в переменнуб
+            const password = document.getElementById("login-password").value; // тут почти все так же ну там все одинаковое тка что ты разберешься
 
-    const response = await fetch(API + "/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
-    });
+            const response = await fetch(API + "/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password }) 
+            });
 
-    const data = await response.json();
-    const result = document.getElementById("auth-result");
+            const data = await response.json(); //принцип один и тот же
+            const result = document.getElementById("auth-result");
 
-    if (response.ok) {
-      result.style.color = "green";
-      result.textContent = "Добро пожаловать, " + data.username + "!";
-    } else {
-      result.style.color = "red";
-      result.textContent = "Ошибка: " + data.detail;
-    }
-  }
+            if (response.ok) {
+                // Просто вставляем кнопку текстом об упешном входе
+                result.style.color = "green";
+                result.textContent = "Добро пожаловать, " + data.username + "!";
+                result.style.color = "green";
+                // Просто вставляем кнопку с адрисацией на другую
+                result.innerHTML = '<button onclick="location.href=\'/admin\'" style="background:transparent; color:#aaa; border:1px solid #222; padding:6px 12px; cursor:pointer; margin-right:15px;">Админка</button> Добро пожаловать, ' + data.username + '!';
 
-  // Регистрация - отправляет логин и пароль на POST /register
-  async function doRegister() {
-    const username = document.getElementById("reg-username").value;
-    const password = document.getElementById("reg-password").value;
+            } else {
+                result.style.color = "red";
+                result.textContent = "Ошибка: " + parseError(data);
+            }
+        }
 
-    const response = await fetch(API + "/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
-    });
+        // Регистрация
+        async function doRegister() {
+            const username = document.getElementById("reg-username").value;
+            const password = document.getElementById("reg-password").value;
 
-    const data = await response.json();
-    const result = document.getElementById("auth-result");
+            const response = await fetch(API + "/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
 
-    if (response.ok) {
-      result.style.color = "green";
-      result.textContent = "Регистрация прошла успешно! Теперь войдите.";
-    } else {
-      result.style.color = "red";
-      result.textContent = "Ошибка: " + data.detail;
-    }
-  }
+            const data = await response.json();
+            const result = document.getElementById("auth-result");
+
+            if (response.ok) {
+                result.style.color = "green";
+                result.textContent = "Регистрация прошла успешно! Теперь войдите.";
+                setTimeout(() => showForm('login'), 1000);
+            } else {
+                result.style.color = "red";
+                result.textContent = "Ошибка: " + parseError(data);
+            }
+        }
+
+        // Поиск статей
         async function search(q) {
             const div = document.getElementById('res');
-            if (q.length < 1) return location.reload();
+            if (q.length < 1) return location.reload(); // если меньше  1 буквы в поичковпике то перезагружает его
             const r = await fetch(`/api/search?q=${q}`);
             const data = await r.json();
             div.innerHTML = data.results.map(i => `
                 <div class="item" onclick="location.href='/article/${i.id}'">
                     <b>${i.name}</b><small>${i.preview}</small>
-                </div>`).join('');
+                    </div>`).join(''); // div inner очищает все внутри статей а data results запускает цикл
+                                    // по поиску  массиву статей div class позваляет писать html внутри джавы
+                                    // onclick переадрисация а i.name и превью подставляют жирный заголовок для статьи и серый текст для краткого описания 
         }
-    
     </script>
 </body>
 

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель управления</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: sans-serif;
+            text-align: center;
+            padding-top: 40px;
+            margin: 0;
+        }
+        
+        .блок-главный {
+            width: 550px;
+            margin: 0 auto;
+            padding-bottom: 50px;
+        }
+
+        /* Аккуратная сплошная рамка для формы */
+        .рамка-формы {
+            border: 1px solid #222;
+            background-color: #0a0a0a;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+
+        /* Выравниваем инпуты, чтобы были одинаковой ширины */
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            background-color: #111;
+            color: #fff;
+            border: 1px solid #333;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-family: sans-serif;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        /* Кнопки в стиле главного экрана */
+        button {
+            background-color: transparent;
+            color: #aaa;
+            border: 1px solid #222;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button:hover {
+            color: #fff;
+            border-color: #444;
+        }
+
+        /* Список статей */
+        .строка-статьи {
+            border-bottom: 1px solid #222;
+            padding: 15px 5px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .инфо-статьи b {
+            display: block;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .инфо-статьи small {
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+<div class="блок-главный">
+    <h1>ПАНЕЛЬ УПРАВЛЕНИЯ</h1>
+    
+    <button onclick="location.href='/dashboard'" style="margin-bottom: 25px;">← На главную</button>
+
+    <!-- Форма для добавления и изменения данных -->
+    <div class="рамка-формы">
+        <h2 id="zagolovok-formy" style="font-weight: normal; margin-top: 0;">Добавить новую статью</h2>
+        
+        <input type="hidden" id="id-stati">
+        
+        <input type="text" id="inp-name" placeholder="Название статьи *">
+        <input type="text" id="inp-preview" placeholder="Краткое описание">
+        <input type="text" id="inp-subject" placeholder="Предмет / Тема *">
+        
+        <textarea id="inp-text" placeholder="Полный текст статьи *"></textarea>
+        <textarea id="inp-note" placeholder="Заметка / Примечание"></textarea>
+        
+        <p style="text-align: left; margin: 15px 0; color: #888; font-size: 14px;">
+            <label style="cursor: pointer;">
+                <input type="checkbox" id="inp-favorite" style="vertical-align: middle;"> Добавить в избранное
+            </label>
+        </p>
+        
+        <button id="knopka-sohranit" onclick="save()">Добавить статью</button>
+        <button id="knopka-otmena" onclick="otmena()" style="display: none; color: red;">Отмена</button>
+    </div>
+
+    <h2 style="text-align: left; font-weight: normal; color: #555; font-size: 18px;">Все статьи</h2>
+    
+    <div id="spisok">
+        {% for i in articles %}
+        <div class="строка-статьи">
+            <div class="инфо-статьи">
+                <b>{{i.name}}</b>
+                <small id="skryt-prev-{{i.id}}">{{i.preview or 'Описания нет'}}</small> | Тема: {{i.subject}}
+
+                
+                <!-- Спрятанные данные для JavaScript -->
+                <span id="skryt-text-{{i.id}}" style="display: none;">{{i.text}}</span>
+                <span id="skryt-note-{{i.id}}" style="display: none;">{{i.note or ''}}</span>
+                <span id="skryt-fav-{{i.id}}" style="display: none;">{{i.favorite}}</span>
+            </div>
+            
+            <div style="white-space: nowrap;">
+                <button onclick="edit('{{i.id}}', '{{i.name}}', '', '{{i.subject}}')" style="color: orange; margin-right: 5px;">Ред.</button>
+
+                <button onclick="del('{{i.id}}')" style="color: red;">Удал.</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>=
+</div>
+
+<script>
+    var api_url = "http://127.0.0";
+
+    // Относительный адрес, чтобы не было проблем с  портом, а то я зайти не мог 
+    var api_url = "/api/admin/add";
+
+    // Функция сохранения новой статьи
+    async function save() {
+        var name = document.getElementById("inp-name").value;
+        var preview = document.getElementById("inp-preview").value;
+        var subject = document.getElementById("inp-subject").value;
+        var text = document.getElementById("inp-text").value;
+        var note = document.getElementById("inp-note").value;
+        var favorite = document.getElementById("inp-favorite").checked;
+
+        if (name == "" || subject == "" || text == "") {
+            alert("Заполните обязательные поля со звездочкой!");
+            return;
+        }
+
+        // Автоматическая генерация ссылки из названия
+        var article = name.toLowerCase().replace(/[^a-zа-я0-9]/g, "-");
+
+        // из даты взял  надеюсь ниче не забыл
+        var data = {
+            name: name,
+            preview: preview,
+            subject: subject,
+            article: article,
+            text: text,
+            note: note,
+            favorite: favorite
+        };
+        //этот скрипт берёт текст, который ты написал в формочках админки пересылая в бд 
+        try {
+            var response = await fetch(api_url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok == true) {
+                alert("Успешно добавлено!");
+                location.reload(); // Перезагружаем, чтобы статья появилась в списке
+            } else {
+                alert("Ошибка сервера! Статус: " + response.status);
+            }
+        } catch (ошибка) {
+            alert("Не удалось отправить запрос к бэкенду!");
+            console.log(ошибка);
+        }
+    }
+
+    //TODO: для отмены
+    function otmena() {
+        location.reload();
+    }
+
+
+
+
+        //РЕДАКТИРОВАНИЕ НЕ УСПЕЛ СДЕЛАТЬ
+
+        //НЕ БЕЙТЕ
+
+        //ПОЖАЛУЙСТА
+
+        //ПОЖАЛУЙСТА
+
+
+
+
+        // Удаление статьи
+            // Функция удаления
+    async function del(id) {
+        var vopros = confirm("Вы уверены, что хотите удалить эту статью?");
+        if (vopros == false) {
+            return;
+        }
+
+        try {
+            // работа с удалением в апп пай
+            var response = await fetch("/api/admin/delete/" + id, { 
+                method: "DELETE" 
+            });
+
+            if (response.ok == true) {
+                alert("Статья успешно удалена!");
+                location.reload();
+            } else {
+                alert("Не удалось удалить статью! Статус: " + response.status);
+            }
+        } catch (ошибка) {
+            alert("Ошибка сети при удалении!");
+        }
+    }
+
+</script>
+</body>
+</html>
